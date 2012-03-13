@@ -16,29 +16,11 @@
 int accel_pin = 0;
 int gyro_pin = 1;
 
-// Name Digital I/O pins
-int sleep_pin = 8;
-int ledPin = 13;
-
-// value to hold the final angle 
-float angle = 0.00;
-float gyro_weight = 0.98;
-float accel_weight = 0.02;
-
 // accelerometer values
 int accel_reading;
-int accel_raw;
-int accel_offset = 500; // Change this value to be whatever your accelerometer reads at 0 degrees
-float accel_angle;
-float accel_scale = 0.01;
 
 // gyroscope values
 int gyro_offset = 388; // THIS IS IMPORTANT - CHANGE THIS VALUE TO BE EXACTLY WHAT YOU RECORDED DURING CALIBRATION
-int gyro_raw;
-int gyro_reading;
-float gyro_rate;
-float gyro_scale = 0.01;
-float gyro_angle;
 
 // timer variables
 int last_update;
@@ -68,8 +50,6 @@ void loop(){
   sample_accel();
   // now read the gyroscope to estimate the angle change
   sample_gyro();
-  // combine the accel and gyro readings to come up with a "filtered" angle reading
-  calculate_angle();
   // check the loop cycle time and add a delay as necessary
   time_stamp();
   // Debug with the Serial monitor
@@ -79,23 +59,11 @@ void loop(){
 void sample_accel(){
   // Read and convert accelerometer value
   accel_reading = analogRead(accel_pin);
-  accel_raw = accel_reading - accel_offset;
-  //accel_raw = constrain(accel_raw, -90, 90);
-  accel_raw = map(accel_raw, 325, -350, 90, -90);
-  accel_angle = (float)(accel_raw * accel_scale);
 }
 
 void sample_gyro(){
   // Read and convert gyro value
   gyro_reading = analogRead(gyro_pin);
-  gyro_raw = gyro_reading - gyro_offset;
-  gyro_raw = constrain(gyro_raw, -391, 391);
-  gyro_rate = (float)(gyro_raw * gyro_scale) * -loop_time;
-  gyro_angle = angle + gyro_rate;
-}
-
-void calculate_angle(){
-  angle = (float)(gyro_weight * gyro_angle) + (accel_weight * accel_angle);
 }
 
 void time_stamp(){
