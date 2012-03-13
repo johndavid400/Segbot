@@ -20,7 +20,7 @@ int gyro_pin = 1;
 int accel_reading;
 
 // gyroscope values
-int gyro_offset = 388; // THIS IS IMPORTANT - CHANGE THIS VALUE TO BE EXACTLY WHAT YOU RECORDED DURING CALIBRATION
+int gyro_reading;
 
 // timer variables
 int last_update;
@@ -34,13 +34,6 @@ float loop_time = 0.07;
 void setup(){
   // Start the Serial monitor at 9600bps
   Serial.begin(9600);
-  // engage the accelerometer by bringing the sleep_pin HIGH
-  pinMode(sleep_pin, OUTPUT);
-  digitalWrite(sleep_pin, HIGH);
-  // set the engage_switch pin as an Input
-  pinMode(engage_switch, INPUT);
-  // enable the Arduino internal pull-up resistor on the engage_switch pin.
-  digitalWrite(engage_switch, HIGH);
   // Tell Arduino to use the Aref pin for the Analog voltage, don't forget to connect 3.3v to Aref!
   analogReference(EXTERNAL);
 }
