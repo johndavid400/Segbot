@@ -15,6 +15,7 @@
 // IMPORTANT - select whether you want to print sensor values or motor values!
 // set to 0 for normal operation (print motor values to Sabertooth) or set as 1 for debugging mode (print sensor values to serial monitor)
 boolean debug = false;
+int debug_pin = 12;
 
 // Name Analog input pins
 int gyro_pin = 2; // connect the gyro Y axis (4.5x output) to Analog input 1
@@ -34,7 +35,7 @@ int accel_raw;
 int accel_avg = 0;
 int accel_offset = 428;
 float accel_angle;
-float accel_scale = 0.01; 
+float accel_scale = 0.01;
 
 //gyroscope values
 int gyro_avg = 0;
@@ -42,7 +43,7 @@ int gyro_offset = 402;
 int gyro_raw;
 int gyro_reading;
 float gyro_rate;
-float gyro_scale = 0.01; 
+float gyro_scale = 0.01;
 // 01 by default
 float gyro_angle;
 float loop_time = -0.05;
@@ -91,8 +92,22 @@ void setup(){
   digitalWrite(4, HIGH);
   // Tell Arduino to use the Aref pin for the Analog voltage, don't forget to connect 3.3v to Aref!
   analogReference(EXTERNAL);
-  // calibrate gyro
+  // calibrate gyro and accelerometer, you should keep the Seg-bot still and level when turning on so calibration will be accurate
   calibrate();
+  // create input for debug_pin to enable user to boot into debug mode if needed by grounding pin 12
+  pinMode(debug_pin, INPUT);
+  // enable the Arduino's internal pull-up resistor on pin D12
+  digitalWrite(debug_pin, HIGH);
+  // let pin voltage settle
+  delay(100);
+  // check pin 12 state: if left alone (not connected to anything), the Seg-bot will operate normally and the motor output values will be sent to the Sabertooth
+  if (digitalRead(debug_pin) == LOW){
+    debug = true;
+  }
+  // if pin 12 is connected to GND while the Seg-bot is turned On, it will boot into Debug mode and the sensor values will be sent to the serial monitor
+  else{
+    debug = false;
+  }
 }
 
 
@@ -103,7 +118,7 @@ void loop(){
   sample_gyro();
   // combine the accel and gyro readings to come up with a "filtered" angle reading
   calculate_angle();
-  
+
   if (debug == false){
     // read the values of each potentiometer
     read_pots();
