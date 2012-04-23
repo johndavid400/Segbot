@@ -16,6 +16,7 @@
 // set to 0 for normal operation (print motor values to Sabertooth) or set as 1 for debugging mode (print sensor values to serial monitor)
 boolean debug = false;
 int debug_pin = 12;
+int debug_led = 13;
 
 // Name Analog input pins
 int gyro_pin = 2; // connect the gyro Y axis (4.5x output) to Analog input 1
@@ -96,6 +97,7 @@ void setup(){
   calibrate();
   // create input for debug_pin to enable user to boot into debug mode if needed by grounding pin 12
   pinMode(debug_pin, INPUT);
+  pinMode(debug_LED, INPUT);
   // enable the Arduino's internal pull-up resistor on pin D12
   digitalWrite(debug_pin, HIGH);
   // let pin voltage settle
@@ -103,10 +105,12 @@ void setup(){
   // check pin 12 state: if left alone (not connected to anything), the Seg-bot will operate normally and the motor output values will be sent to the Sabertooth
   if (digitalRead(debug_pin) == LOW){
     debug = true;
+    digitalWrite(debug_led, HIGH);
   }
   // if pin 12 is connected to GND while the Seg-bot is turned On, it will boot into Debug mode and the sensor values will be sent to the serial monitor
   else{
     debug = false;
+    digitalWrite(debug_led, LOW);
   }
 }
 
