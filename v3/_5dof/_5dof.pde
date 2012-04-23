@@ -12,8 +12,7 @@
 // Test thoroughly with wheels off the ground before attempting to ride - Wear a helmet!
 
 
-// IMPORTANT - select whether you want to print sensor values or motor values!
-// set to 0 for normal operation (print motor values to Sabertooth) or set as 1 for debugging mode (print sensor values to serial monitor)
+// Pin 12 decides whether the Arduino goes into debug mode or not. if pin 12 is not connected to anything, the segbot will operate normally. if pin 12 is grounded, the segbot will boot into debug mode and will print sensor values to the serial monitor instead of motor values to the sabertooth.
 boolean debug = false;
 int debug_pin = 12;
 int debug_led = 13;
@@ -97,7 +96,7 @@ void setup(){
   calibrate();
   // create input for debug_pin to enable user to boot into debug mode if needed by grounding pin 12
   pinMode(debug_pin, INPUT);
-  pinMode(debug_LED, INPUT);
+  pinMode(debug_LED, OUTPUT);
   // enable the Arduino's internal pull-up resistor on pin D12
   digitalWrite(debug_pin, HIGH);
   // let pin voltage settle
