@@ -96,7 +96,7 @@ void setup(){
   calibrate();
   // create input for debug_pin to enable user to boot into debug mode if needed by grounding pin 12
   pinMode(debug_pin, INPUT);
-  pinMode(debug_LED, OUTPUT);
+  pinMode(debug_led, OUTPUT);
   // enable the Arduino's internal pull-up resistor on pin D12
   digitalWrite(debug_pin, HIGH);
   // let pin voltage settle
