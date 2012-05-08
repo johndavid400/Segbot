@@ -21,7 +21,7 @@ int debug_led = 13;
 int gyro_pin = 2; // connect the gyro Y axis (4.5x output) to Analog input 1
 int accel_pin = 0; // connect the accelerometer X axis to Analog input 5
 int steeringPot = 3; // connect the steering potentiometer to Analog input 3
-int gainPot = 2; // connect the gain potentiometer to Analog input 2
+int gainPot = 4; // connect the gain potentiometer to Analog input 2
 // Name Digital I/O pins
 
 // value to hold the final angle
@@ -49,6 +49,7 @@ float gyro_angle;
 float loop_time = -0.05;
 
 // engage button variables
+int engage_switch = 7;
 int engage = false;
 int engage_state = 1;
 // timer variables
@@ -87,9 +88,9 @@ void setup(){
   // Start the Serial monitor at 9600bps
   Serial.begin(9600);
   // set the engage_switch pin as an Input
-  pinMode(4, INPUT);
+  pinMode(engage_switch, INPUT);
   // enable the Arduino internal pull-up resistor on the engage_switch pin.
-  digitalWrite(4, HIGH);
+  digitalWrite(engage_switch, HIGH);
   // Tell Arduino to use the Aref pin for the Analog voltage, don't forget to connect 3.3v to Aref!
   analogReference(EXTERNAL);
   // calibrate gyro and accelerometer, you should keep the Seg-bot still and level when turning on so calibration will be accurate
@@ -175,18 +176,23 @@ void read_pots(){
 
 void auto_level(){
   // enable auto-level turn On
-  engage_state = digitalRead(4);
-  if (engage_state == 1) {
-    engage = false;
-  } 
+  //engage_state = digitalRead(engage_switch);
+  if (digitalRead(engage_switch) == 1){
+    delay(10);
+    if (digitalRead(engage_switch) == 1){
+      engage = false;
+    }
+  }
   else {
-    if (engage == false) {
-      if (angle < 0.02 && angle > -0.02) {
+    if (engage == false){
+      if (angle < 0.02 && angle > -0.02)
         engage = true;
-      } 
       else {
         engage = false;
       }
+    }
+    else {
+      engage = true;
     }
   }
 }
