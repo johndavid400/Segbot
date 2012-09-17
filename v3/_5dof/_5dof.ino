@@ -11,6 +11,8 @@
 // If you are concerned with the safety of this project, it may not be for you.
 // Test thoroughly with wheels off the ground before attempting to ride - Wear a helmet!
 
+// updated 9-16-12: fix Serial.print to Serial.write for newer Arduino IDE 1.0+
+
 
 // Pin 12 decides whether the Arduino goes into debug mode or not. if pin 12 is not connected to anything, the segbot will operate normally. if pin 12 is grounded, the segbot will boot into debug mode and will print sensor values to the serial monitor instead of motor values to the sabertooth.
 boolean debug = false;
@@ -248,9 +250,8 @@ void update_motor_speed(){
   }
   
   // Serial speed values write here:
-  Serial.print(m1_speed);
-  Serial.print("   ");
-  Serial.println(m2_speed);
+  Serial.write(m1_speed);
+  Serial.write(m2_speed);
   
 }
 
