@@ -1,4 +1,3 @@
-// MAKE magazine DIY Seg-bot
 // JD Warren 2012
 // Arduino Uno R2
 // Sparkfun Dual-axis gyroscope #SEN-09990, using LPR530AL gyroscope chip
