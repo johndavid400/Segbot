@@ -8,7 +8,7 @@
 // Even though I do my best to use the correct axises... every time I end up using one of the wrong ones. This time, the gyroscope incenuated Y but instead I needed X.
 // So... I am using the Y axis from the Accelerometer and the X axis from the Gyroscope, as they area aligned. I would change it, but it is already soldered and I am lazy.
 
-// declare output pins for x and y accelerometer
+// declare input pins for x and y accelerometer
 int accel = 7;
 
 // raw values for x and y readings
