@@ -15,8 +15,11 @@ int accel = 7;
 int accel_raw = 0;
 
 // values for min/max accelerometer readings
-int accel_low = 3700;
-int accel_high = 6300;
+int accel_sample;
+int accel_n = 100;
+int accel_range = 1250;
+int accel_low;
+int accel_high;
 
 // Floats for angles
 float angle = 0.0;
@@ -50,6 +53,27 @@ void setup(){
   writeI2C(CTRL_REG3, 0x08);    // Enable control ready signal
   writeI2C(CTRL_REG4, 0x80);    // Set scale (500 deg/sec)
   delay(100);                   // Wait to synchronize 
+  sample_accel();
+  delay(1000);
+}
+
+void sample_accel(){
+  long accel_total = 0;
+  for (int i = 0; i < accel_n; i++){
+    read_accel();
+    accel_total += accel_raw;
+  }
+  accel_sample = (accel_total / accel_n) - 100;
+  Serial.print("Total: ");
+  Serial.println(accel_total);
+  Serial.print("AVG: ");
+  Serial.println(accel_sample);
+  accel_low = accel_sample - accel_range;
+  accel_high = accel_sample + accel_range;
+  Serial.print("Accel Low:  ");
+  Serial.println(accel_low);
+  Serial.print("Accel High:  ");
+  Serial.println(accel_high);
 }
 
 void loop(){
@@ -57,8 +81,10 @@ void loop(){
   read_accel();
   // read gyroscope values
   read_gyroscope();
+  // calculate angle
+  calculate_angle();
   // print values
-  print_accel();
+  print_stuff();
   // delay
   delay(50);
 }
@@ -73,21 +99,23 @@ void read_accel(){
   accel_angle = map(accel_raw, accel_low, accel_high, -90, 90);
 }
 
-void print_accel(){
+void print_stuff(){
+    
+  // print accel angle
+  Serial.print("Accel: ");
+  Serial.print(accel_angle);
+  Serial.print("     ");
   
-  // In following Dividing by 114 reduces noise
-  Serial.print("Angle:"); 
+  // print gyro angle
+  Serial.print("Gyro:"); 
   Serial.print(gyro_angle);
   Serial.print("    ");
   
-  // print y values
-  Serial.print("Accel Y: ");
-  Serial.print(accel_angle);
-  Serial.print("     ");
-  // In following Dividing by 114 reduces noise
-  Serial.print("Gyro X:"); 
-  Serial.print(gyro_rate);
+  // print filtered angle
+  Serial.print("Angle:"); 
+  Serial.print(angle);
   Serial.print("    ");
+  
   // end of line
   Serial.println("");  
 }
