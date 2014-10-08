@@ -8,6 +8,8 @@
 // Even though I do my best to use the correct axises... every time I end up using one of the wrong ones. This time, the gyroscope incenuated Y but instead I needed X.
 // So... I am using the Y axis from the Accelerometer and the X axis from the Gyroscope, as they area aligned. I would change it, but it is already soldered and I am lazy.
 
+boolean print_stuff = true;
+
 // declare input pins for x and y accelerometer
 int accel = 7;
 
@@ -15,11 +17,8 @@ int accel = 7;
 int accel_raw = 0;
 
 // values for min/max accelerometer readings
-int accel_sample;
-int accel_n = 100;
-int accel_range = 1250;
-int accel_low;
-int accel_high;
+int accel_low = 3750;
+int accel_high = 6250;
 
 // Floats for angles
 float angle = 0.0;
@@ -30,8 +29,8 @@ float accel_angle = 0.0;
 float gyro_scale = 0.1;
 
 // set variable weights
-float gyro_weight = 0.02;
-float accel_weight = 0.98;
+float gyro_weight = 0.9;
+float accel_weight = 0.1;
 
 // I2C setup for gyroscope
 #include <Wire.h>
@@ -53,71 +52,45 @@ void setup(){
   writeI2C(CTRL_REG3, 0x08);    // Enable control ready signal
   writeI2C(CTRL_REG4, 0x80);    // Set scale (500 deg/sec)
   delay(100);                   // Wait to synchronize 
-  sample_accel();
-  delay(1000);
 }
 
 void sample_accel(){
-  long accel_total = 0;
-  for (int i = 0; i < accel_n; i++){
-    read_accel();
-    accel_total += accel_raw;
+  accel_raw = pulseIn(accel, HIGH);
+  if (accel_raw < accel_low){
+    accel_low = accel_raw;
   }
-  accel_sample = (accel_total / accel_n) - 100;
-  Serial.print("Total: ");
-  Serial.println(accel_total);
-  Serial.print("AVG: ");
-  Serial.println(accel_sample);
-  accel_low = accel_sample - accel_range;
-  accel_high = accel_sample + accel_range;
+  else if (accel_raw > accel_high){
+    accel_high = accel_raw;
+  }
   Serial.print("Accel Low:  ");
-  Serial.println(accel_low);
-  Serial.print("Accel High:  ");
+  Serial.print(accel_low);
+  Serial.print("   Accel High:  ");
   Serial.println(accel_high);
 }
 
 void loop(){
+  //sample_accel();
   // read accelerometer values
   read_accel();
   // read gyroscope values
   read_gyroscope();
   // calculate angle
   calculate_angle();
-  // print values
-  print_stuff();
   // delay
   delay(50);
+  Serial.println("");
 }
 
-void calculate_angle(){
-  angle = (float)(gyro_weight * gyro_angle) + (accel_weight * accel_angle);
-}
 
 void read_accel(){
   // read the y axis of the accelerometer
   accel_raw = pulseIn(accel, HIGH);
   accel_angle = map(accel_raw, accel_low, accel_high, -90, 90);
-}
-
-void print_stuff(){
-    
-  // print accel angle
-  Serial.print("Accel: ");
-  Serial.print(accel_angle);
-  Serial.print("     ");
-  
-  // print gyro angle
-  Serial.print("Gyro:"); 
-  Serial.print(gyro_angle);
-  Serial.print("    ");
-  
-  // print filtered angle
-  Serial.print("Angle:"); 
-  Serial.print(angle);
-  Serial.print("    ");
-  
-  // end of line
-  Serial.println("");  
+  if (print_stuff){
+    // print accelerometer angle
+    Serial.print("Accel: ");
+    Serial.print(accel_angle);
+  }
 }
 
 void read_gyroscope(){
@@ -125,6 +98,12 @@ void read_gyroscope(){
   getGyroValues();
   // sum gyro angle
   gyro_angle = gyro_angle + (gyro_rate * gyro_scale);
+  //gyro_angle += gyro_rate;
+  if (print_stuff){
+    // print gyro angle
+    Serial.print("  Gyro:"); 
+    Serial.print(gyro_angle);
+  }
 }
 
 void getGyroValues () {
@@ -135,12 +114,23 @@ void getGyroValues () {
   gyro_rate = ((MSB << 8) | LSB) / 114;
 }
 
+void calculate_angle(){
+  // calculate angle using weighted average (complementary filter)
+  angle = (float)(gyro_weight * gyro_angle) + (accel_weight * accel_angle);
+  if (print_stuff){
+    // print filtered angle
+    Serial.print("  Angle:"); 
+    Serial.print(angle);
+  }
+}
+
 int readI2C (byte regAddr) {
   Wire.beginTransmission(Addr);
   Wire.write(regAddr);                // Register address to read
   Wire.endTransmission();             // Terminate request
   Wire.requestFrom(Addr, 1);          // Read a byte
-  while(!Wire.available()) {};        // Wait for receipt
+  while(!Wire.available()) {
+  };        // Wait for receipt
   return(Wire.read());                // Get result
 }
 
@@ -150,5 +140,6 @@ void writeI2C (byte regAddr, byte val) {
   Wire.write(val);
   Wire.endTransmission();
 }
+
 
 
