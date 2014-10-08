@@ -8,7 +8,10 @@
 // Even though I do my best to use the correct axises... every time I end up using one of the wrong ones. This time, the gyroscope incenuated Y but instead I needed X.
 // So... I am using the Y axis from the Accelerometer and the X axis from the Gyroscope, as they area aligned. I would change it, but it is already soldered and I am lazy.
 
-boolean print_stuff = true;
+// Pin 12 decides whether the Arduino goes into debug mode or not. if pin 12 is not connected to anything, the segbot will operate normally. if pin 12 is grounded, the segbot will boot into debug mode and will print sensor values to the serial monitor instead of motor values to the sabertooth.
+boolean debug = false;
+int debug_pin = 12;
+int debug_led = 13;
 
 // declare input pins for x and y accelerometer
 int accel = 7;
@@ -19,6 +22,8 @@ int accel_raw = 0;
 // values for min/max accelerometer readings
 int accel_low = 3750;
 int accel_high = 6250;
+int accel_avg = 0;
+int accel_offset = 0;
 
 // Floats for angles
 float angle = 0.0;
@@ -27,6 +32,8 @@ float accel_angle = 0.0;
 
 // scale variable for Gyro
 float gyro_scale = 0.1;
+int gyro_avg = 0;
+int gyro_offset = 0;
 
 // set variable weights
 float gyro_weight = 0.9;
@@ -41,6 +48,30 @@ float accel_weight = 0.1;
 int Addr = 105;                 // I2C address of gyro
 int gyro_rate;
 
+// engage button variables
+int engage_switch = 7;
+int engage = false;
+int engage_state = 1;
+// timer variables
+int last_update;
+int cycle_time;
+long last_cycle = 0;
+// motor speed variables
+int motor_out = 0;
+int motor_1_out = 0;
+int motor_2_out = 0;
+int m1_speed = 0;
+int m2_speed = 0;
+int output;
+// potentiometer variables
+int steer_val;
+int steer_range = 7;
+int steer_reading;
+int position_reading;
+int position_val;
+int steeringPot = 3; // connect the steering potentiometer to Analog input 3
+int positionPot = 4; // connect the gain potentiometer to Analog input 2
+
 // end of variable declaration
 
 void setup(){
@@ -52,45 +83,69 @@ void setup(){
   writeI2C(CTRL_REG3, 0x08);    // Enable control ready signal
   writeI2C(CTRL_REG4, 0x80);    // Set scale (500 deg/sec)
   delay(100);                   // Wait to synchronize 
-}
 
-void sample_accel(){
-  accel_raw = pulseIn(accel, HIGH);
-  if (accel_raw < accel_low){
-    accel_low = accel_raw;
+  // enable the Arduino internal pull-up resistor on the engage_switch pin.
+  pinMode(engage_switch, INPUT);
+  digitalWrite(engage_switch, HIGH);
+  // create input for debug_pin to enable user to boot into debug mode if needed by grounding pin 12
+  pinMode(debug_pin, INPUT);
+  pinMode(debug_led, OUTPUT);
+  // enable the Arduino's internal pull-up resistor on pin D12
+  digitalWrite(debug_pin, HIGH);
+  // let pin voltage settle
+  delay(100);
+  // check pin 12 state: if left alone (not connected to anything), the Seg-bot will operate normally and the motor output values will be sent to the Sabertooth
+  if (digitalRead(debug_pin) == LOW){
+    debug = true;
+    digitalWrite(debug_led, HIGH);
   }
-  else if (accel_raw > accel_high){
-    accel_high = accel_raw;
+  // if pin 12 is connected to GND while the Seg-bot is turned On, it will boot into Debug mode and the sensor values will be sent to the serial monitor
+  else{
+    debug = false;
+    digitalWrite(debug_led, LOW);
   }
-  Serial.print("Accel Low:  ");
-  Serial.print(accel_low);
-  Serial.print("   Accel High:  ");
-  Serial.println(accel_high);
 }
 
 void loop(){
-  //sample_accel();
   // read accelerometer values
   read_accel();
   // read gyroscope values
   read_gyroscope();
   // calculate angle
   calculate_angle();
-  // delay
-  delay(50);
-  Serial.println("");
+
+  if (debug == false){
+    // read the values of each potentiometer
+    read_pots();
+    // update the motors with the new values
+    update_motor_speed();
+    // check the loop cycle time and add a delay as necessary
+    time_stamp();
+  }
+  else {
+    // check the loop cycle time and add a delay as necessary
+    time_stamp();
+    // Debug with the Serial monitor
+    serial_print_stuff();
+  }
 }
 
+void serial_print_stuff(){
+  // print accelerometer angle
+  Serial.print("Accel: ");
+  Serial.print(accel_angle);
+  // print gyro angle
+  Serial.print("  Gyro:"); 
+  Serial.print(gyro_angle);
+  // print filtered angle
+  Serial.print("  Angle:"); 
+  Serial.print(angle);
+}
 
 void read_accel(){
   // read the y axis of the accelerometer
   accel_raw = pulseIn(accel, HIGH);
   accel_angle = map(accel_raw, accel_low, accel_high, -90, 90);
-  if (print_stuff){
-    // print accelerometer angle
-    Serial.print("Accel: ");
-    Serial.print(accel_angle);
-  }
 }
 
 void read_gyroscope(){
@@ -98,15 +153,9 @@ void read_gyroscope(){
   getGyroValues();
   // sum gyro angle
   gyro_angle = gyro_angle + (gyro_rate * gyro_scale);
-  //gyro_angle += gyro_rate;
-  if (print_stuff){
-    // print gyro angle
-    Serial.print("  Gyro:"); 
-    Serial.print(gyro_angle);
-  }
 }
 
-void getGyroValues () {
+void getGyroValues() {
   byte MSB, LSB;
   MSB = readI2C(0x29);
   LSB = readI2C(0x28);
@@ -116,12 +165,7 @@ void getGyroValues () {
 
 void calculate_angle(){
   // calculate angle using weighted average (complementary filter)
-  angle = (float)(gyro_weight * gyro_angle) + (accel_weight * accel_angle);
-  if (print_stuff){
-    // print filtered angle
-    Serial.print("  Angle:"); 
-    Serial.print(angle);
-  }
+  angle = ((float)(gyro_weight * gyro_angle) + (accel_weight * accel_angle)) + position_val;
 }
 
 int readI2C (byte regAddr) {
@@ -141,5 +185,94 @@ void writeI2C (byte regAddr, byte val) {
   Wire.endTransmission();
 }
 
+void time_stamp(){
+  // check to make sure it has been exactly 50 milliseconds since the last recorded time-stamp
+  while((millis() - last_cycle) < 50){
+    delay(1);
+  }
+  // once the loop cycle reaches 50 mS, reset timer value and proceed
+  cycle_time = millis() - last_cycle;
+  last_cycle = millis();
+}
 
+void read_pots(){
+  // Read and convert potentiometer values
+  // Steering potentiometer
+  steer_reading = analogRead(steeringPot); // We want to map this into a range between -1 and 1, and set that to steer_val
+  steer_val = map(steer_reading, 0, 1023, steer_range, -steer_range);
+  if (angle == 0.00){
+    position_reading = 0;
+  }
+  // Angle position potentiometer
+  position_reading = analogRead(positionPot);
+  position_val = map(position_reading, 0, 1023, -10, 10);
+}
 
+void update_motor_speed(){
+  // Update the motors
+  if (engage == true){
+    if (angle < -0.45 || angle > 0.45){
+      m1_speed = 0;
+      m2_speed = 0;
+    }
+    else {
+      output = (angle * -1000); // convert float angle back to integer format
+      motor_out = map(output, -250, 250, -64, 64); // map the angle
+
+      // assign steering bias
+      motor_1_out = motor_out + (steer_val);
+      motor_2_out = motor_out - (steer_val);
+      // test for and correct invalid values
+      if(motor_1_out > 64){
+        motor_1_out = 64;
+      }
+      if(motor_1_out < -64){
+        motor_1_out = -64;
+      }
+      if(motor_2_out > 64){
+        motor_2_out = 64;
+      }
+      if(motor_2_out < -64){
+        motor_2_out = -64;
+      }
+      // assign final motor output values
+      m1_speed = 64 + motor_1_out;
+      m2_speed = 192 + motor_2_out;
+
+      if (m1_speed < 1){
+        m1_speed = 1; 
+      }
+      else if (m1_speed > 127){
+        m1_speed = 127;
+      }
+      if (m2_speed < 128){
+        m2_speed = 128; 
+      }
+      else if (m2_speed > 255){
+        m2_speed = 255;
+      }
+    }
+  }
+  else{
+    m1_speed = 0;
+    m2_speed = 0;
+  }
+  // Serial speed values write here:
+  Serial.write(m1_speed);
+  Serial.write(m2_speed);
+
+}
+
+void sample_accel(){
+  accel_raw = pulseIn(accel, HIGH);
+  if (accel_raw < accel_low){
+    accel_low = accel_raw;
+  }
+  else if (accel_raw > accel_high){
+    accel_high = accel_raw;
+  }
+  Serial.print("Accel Low:  ");
+  Serial.print(accel_low);
+  Serial.print("   Accel High:  ");
+  Serial.println(accel_high);
+}
