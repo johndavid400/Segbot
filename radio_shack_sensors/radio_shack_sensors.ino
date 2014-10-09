@@ -13,7 +13,7 @@ boolean debug = true;
 int debug_pin = 12;
 int debug_led = 13;
 
-// declare input pins for x and y accelerometer
+// declare input pin for accelerometer
 int accel = 7;
 
 // variables for accelerometer
@@ -51,6 +51,7 @@ int gyro_rate;
 int engage_switch = 7;
 int engage = false;
 int engage_state = 1;
+float allowance = 0.1;
 
 // timer variables
 int last_update;
@@ -119,6 +120,8 @@ void loop(){
   if (debug == false){
     // read the values of each potentiometer
     read_pots();
+    // make sure button is pushed before engaging
+    read_button();
     // update the motors with the new values
     update_motor_speed();
     // check the loop cycle time and add a delay as necessary
@@ -210,8 +213,7 @@ int readI2C (byte regAddr) {
   Wire.write(regAddr);                // Register address to read
   Wire.endTransmission();             // Terminate request
   Wire.requestFrom(Addr, 1);          // Read a byte
-  while(!Wire.available()) {
-  };        // Wait for receipt
+  while(!Wire.available()) {};        // Wait for receipt
   return(Wire.read());                // Get result
 }
 
@@ -232,6 +234,28 @@ void time_stamp(){
   last_cycle = millis();
 }
 
+void read_button(){
+  // read kill switch
+  if (digitalRead(engage_switch) == 1){
+    delay(500);
+    if (digitalRead(engage_switch) == 1){
+      engage = false;
+    }
+  }
+  else {
+    if (engage == false){
+      if (angle < allowance && angle > -allowance)
+        engage = true;
+      else {
+        engage = false;
+      }
+    }
+    else {
+      engage = true;
+    }
+  }
+}
+
 void read_pots(){
   // Read and convert potentiometer values
   // Steering potentiometer
@@ -248,11 +272,6 @@ void read_pots(){
 void update_motor_speed(){
   // Update the motors
   if (engage == true){
-    if (angle < -0.45 || angle > 0.45){
-      m1_speed = 0;
-      m2_speed = 0;
-    }
-    else {
       output = (angle * -1000); // convert float angle back to integer format
       motor_out = map(output, -250, 250, -64, 64); // map the angle
 
@@ -288,7 +307,6 @@ void update_motor_speed(){
       else if (m2_speed > 255){
         m2_speed = 255;
       }
-    }
   }
   else{
     m1_speed = 0;
