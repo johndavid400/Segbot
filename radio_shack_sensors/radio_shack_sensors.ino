@@ -9,19 +9,17 @@
 // So... I am using the Y axis from the Accelerometer and the X axis from the Gyroscope, as they area aligned. I would change it, but it is already soldered and I am lazy.
 
 // Pin 12 decides whether the Arduino goes into debug mode or not. if pin 12 is not connected to anything, the segbot will operate normally. if pin 12 is grounded, the segbot will boot into debug mode and will print sensor values to the serial monitor instead of motor values to the sabertooth.
-boolean debug = false;
+boolean debug = true;
 int debug_pin = 12;
 int debug_led = 13;
 
 // declare input pins for x and y accelerometer
 int accel = 7;
 
-// raw values for x and y readings
+// variables for accelerometer
 int accel_raw = 0;
-
-// values for min/max accelerometer readings
-int accel_low = 3750;
-int accel_high = 6250;
+int accel_low = 3000;
+int accel_high = 7000;
 int accel_avg = 0;
 int accel_offset = 0;
 
@@ -30,14 +28,15 @@ float angle = 0.0;
 float gyro_angle = 0.0;
 float accel_angle = 0.0;
 
-// scale variable for Gyro
-float gyro_scale = 0.1;
+// variables for Gyro
+float gyro_scale = 0.025;
 int gyro_avg = 0;
 int gyro_offset = 0;
+float drift_correction_speed = 0.5;
 
 // set variable weights
-float gyro_weight = 0.9;
-float accel_weight = 0.1;
+float gyro_weight = 0.95;
+float accel_weight = 0.05;
 
 // I2C setup for gyroscope
 #include <Wire.h>
@@ -52,10 +51,12 @@ int gyro_rate;
 int engage_switch = 7;
 int engage = false;
 int engage_state = 1;
+
 // timer variables
 int last_update;
 int cycle_time;
 long last_cycle = 0;
+
 // motor speed variables
 int motor_out = 0;
 int motor_1_out = 0;
@@ -63,6 +64,7 @@ int motor_2_out = 0;
 int m1_speed = 0;
 int m2_speed = 0;
 int output;
+
 // potentiometer variables
 int steer_val;
 int steer_range = 7;
@@ -101,7 +103,7 @@ void setup(){
   }
   // if pin 12 is connected to GND while the Seg-bot is turned On, it will boot into Debug mode and the sensor values will be sent to the serial monitor
   else{
-    debug = false;
+    //debug = false;
     digitalWrite(debug_led, LOW);
   }
 }
@@ -128,18 +130,44 @@ void loop(){
     // Debug with the Serial monitor
     serial_print_stuff();
   }
+  // fix drift by slowly returning the gyro angle reading to match the accelerometer reading
+  fix_drift();
 }
 
 void serial_print_stuff(){
   // print accelerometer angle
-  Serial.print("Accel: ");
+  //Serial.print("A: ");
   Serial.print(accel_angle);
   // print gyro angle
-  Serial.print("  Gyro:"); 
+  Serial.print("  G:");
   Serial.print(gyro_angle);
   // print filtered angle
-  Serial.print("  Angle:"); 
+  Serial.print("  F:");
   Serial.print(angle);
+  
+  /*
+  // print cycle time
+  Serial.print(" time: ");
+  Serial.print(cycle_time); // print the loop cycle time
+  
+  // these values are commented out, unless testing
+  Serial.print("o/m: ");
+  Serial.print(output);
+  Serial.print("/");
+  Serial.print(motor_out);
+  Serial.println(" ");
+  Serial.print("steer_val: ");
+  Serial.print(steer_val);
+  Serial.print(" ");
+  Serial.print("steer_reading: ");
+  Serial.print(steer_reading);
+  Serial.print(" ");
+  Serial.print("m1/m2: ");
+  Serial.print(m1_speed);
+  Serial.print("/");
+  Serial.println(m2_speed);
+  */
+  Serial.println(" ");
 }
 
 void read_accel(){
@@ -152,7 +180,7 @@ void read_gyroscope(){
   // Get new values
   getGyroValues();
   // sum gyro angle
-  gyro_angle = gyro_angle + (gyro_rate * gyro_scale);
+  gyro_angle += gyro_rate * gyro_scale;
 }
 
 void getGyroValues() {
@@ -165,7 +193,16 @@ void getGyroValues() {
 
 void calculate_angle(){
   // calculate angle using weighted average (complementary filter)
-  angle = ((float)(gyro_weight * gyro_angle) + (accel_weight * accel_angle)) + position_val;
+  angle = (float)(gyro_weight * gyro_angle) + (accel_weight * accel_angle);
+}
+
+void fix_drift(){
+  if (gyro_angle > accel_angle){
+    gyro_angle -= drift_correction_speed;
+  }
+  else if (gyro_angle < accel_angle){
+    gyro_angle += drift_correction_speed;
+  }
 }
 
 int readI2C (byte regAddr) {
@@ -187,7 +224,7 @@ void writeI2C (byte regAddr, byte val) {
 
 void time_stamp(){
   // check to make sure it has been exactly 50 milliseconds since the last recorded time-stamp
-  while((millis() - last_cycle) < 50){
+  while((millis() - last_cycle) < 25){
     delay(1);
   }
   // once the loop cycle reaches 50 mS, reset timer value and proceed
