@@ -1,5 +1,5 @@
 
-/*
+
 void read_pots(){
   // Read and convert potentiometer values
   // Steering potentiometer
@@ -9,4 +9,3 @@ void read_pots(){
   position_reading = map(analogRead(positionPot), 0, 1023, -position_range, position_range);
   angle_offset = accel_offset + position_reading;
 }
-*/

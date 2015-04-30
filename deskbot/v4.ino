@@ -20,29 +20,23 @@ float gyro_scale = 0.05;
 float gyro_weight = 0.98;
 float accel_weight = 0.02;
 
-//int engage_switch = 4;
-//int steeringPot = 0; // connect the steering potentiometer to Analog input 3
-//int positionPot = 1; // connect the gain potentiometer to Analog input 2
+int engage_switch = 4;
+int steeringPot = 0; // connect the steering potentiometer to Analog input 3
+int positionPot = 1; // connect the gain potentiometer to Analog input 2
 
 // engage button variables
-//int engage = false;
-//int engage_state = 1;
-//float allowance = 1.0;
+int engage = false;
+int engage_state = 1;
+float allowance = 1.0;
 
 // potentiometer variables
-//int steer_val;
-//int steer_range = 7;
-//int steer_reading;
-//int position_reading;
-//int angle_offset = 0;
-//int position_range = 10;
-//int stop_increment = 1;
-
-// set variables for motor control pins
-int m1_dir = 12;  // motor 1 direction
-int m1_pwm = 3;   // motor 1 speed (motor 1 enable pin)
-int m2_dir = 13;  // motor 2 direction
-int m2_pwm = 11;  // motor 2 speed (motor 2 enable pin)
+int steer_val;
+int steer_range = 7;
+int steer_reading;
+int position_reading;
+int angle_offset = 0;
+int position_range = 10;
+int stop_increment = 1;
 
 // end of variable declaration
 
@@ -52,12 +46,6 @@ void setup(){
   gyro_setup();
   sample_accel();
   delay(1000);
-  
-  // setup motors
-  pinMode(m1_dir, OUTPUT);
-  pinMode(m1_pwm, OUTPUT);
-  pinMode(m2_dir, OUTPUT);
-  pinMode(m2_pwm, OUTPUT);
 }
 
 void loop(){
@@ -80,20 +68,28 @@ void calculate_angle(){
   //angle = gyro_angle;
 }
 
-void print_stuff(){  
+void print_stuff(){
+  
   // print accel angle
   Serial.print("Accel: ");
   Serial.print(accel_angle);
   Serial.print("     ");
+  
   // print gyro angle
   Serial.print("Gyro:"); 
   Serial.print(gyro_angle);
   Serial.print("    ");
+  
   // print filtered angle
   Serial.print("Angle:"); 
   Serial.print(angle);
   Serial.print("    ");
+  
   // end of line
   Serial.println("");  
+
 }
+
+
+
 
