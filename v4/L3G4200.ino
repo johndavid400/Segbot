@@ -12,6 +12,12 @@
 int Addr = 105;                 // I2C address of gyro
 float gyro_rate;
 
+// variables for Gyro
+
+int gyro_avg = 0;
+int gyro_offset = 0;
+float drift_correction_speed = 0.5;
+
 void gyro_setup(){
   Wire.begin();
   writeI2C(CTRL_REG1, 0x1F);    // Turn on all axes, disable power down
@@ -24,7 +30,8 @@ void read_gyroscope(){
   // Get new values
   getGyroValues();
   // sum gyro angle
-  gyro_angle = gyro_angle + (gyro_rate * gyro_scale);
+  //gyro_angle = gyro_angle + (gyro_rate * gyro_scale);
+  gyro_angle += gyro_rate * gyro_scale;
 }
 
 void getGyroValues () {
@@ -49,4 +56,13 @@ void writeI2C (byte regAddr, byte val) {
   Wire.write(regAddr);
   Wire.write(val);
   Wire.endTransmission();
+}
+
+void fix_drift(){
+  if (gyro_angle > accel_angle){
+    gyro_angle -= drift_correction_speed;
+  }
+  else if (gyro_angle < accel_angle){
+    gyro_angle += drift_correction_speed;
+  }
 }

@@ -14,6 +14,13 @@ int accel_range = 1250;
 int accel_low;
 int accel_high;
 
+// variables for accelerometer
+//int accel_low = 3000;
+//int accel_high = 7000;
+int accel_avg = 0;
+int accel_offset = 0;
+
+
 void accel_setup(){
   pinMode(accel, INPUT);
 }
@@ -40,5 +47,17 @@ void sample_accel(){
 void read_accel(){
   // read the y axis of the accelerometer
   accel_raw = pulseIn(accel, HIGH);
-  accel_angle = map(accel_raw, accel_low, accel_high, -90, 90);
+  accel_angle = map(accel_raw, accel_low, accel_high, -55, 50);
+}
+
+void set_accel_offset(){
+  int accel_sum = 0;
+  for (int x = 0; x < 10; x++){
+    read_accel();
+    accel_sum += accel_angle;
+  }
+  accel_offset = accel_sum / 10;
+  read_accel();
+  read_gyroscope();
+  calculate_angle();
 }
