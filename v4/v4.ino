@@ -47,36 +47,37 @@ int m2_pwm = 11;  // motor 2 speed (motor 2 enable pin)
 // end of variable declaration
 
 void setup(){
-  Serial.begin(9600);
-  accel_setup();
-  gyro_setup();
-  sample_accel();
-  delay(1000);
-  
+  pinMode(8, OUTPUT);
+  pinMode(9, OUTPUT);
+
   // setup motors
   pinMode(m1_dir, OUTPUT);
   pinMode(m1_pwm, OUTPUT);
   pinMode(m2_dir, OUTPUT);
   pinMode(m2_pwm, OUTPUT);
+  m1_stop();
+  m2_stop();
+  
+  Serial.begin(9600);
+  accel_setup();
+  gyro_setup();
+  sample_accel();
+  //delay(1000);
 }
 
 void loop(){
-  /*
   // read accelerometer values
   read_accel();
   // read gyroscope values
   read_gyroscope();
   // calculate angle
   calculate_angle();
-  // fix drift by slowly returning the gyro angle reading to match the accelerometer reading
-  fix_drift();
   // print values
   update_motor_speed();
   // print values
   print_stuff();
-  */
-  m1_reverse(255);
-  m2_reverse(255);
+  // fix drift by slowly returning the gyro angle reading to match the accelerometer reading
+  fix_drift();
   // delay
   delay(50);
 }
