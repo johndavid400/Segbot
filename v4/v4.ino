@@ -61,6 +61,7 @@ void setup(){
 }
 
 void loop(){
+  /*
   // read accelerometer values
   read_accel();
   // read gyroscope values
@@ -70,7 +71,12 @@ void loop(){
   // fix drift by slowly returning the gyro angle reading to match the accelerometer reading
   fix_drift();
   // print values
+  update_motor_speed();
+  // print values
   print_stuff();
+  */
+  m1_reverse(255);
+  m2_reverse(255);
   // delay
   delay(50);
 }
