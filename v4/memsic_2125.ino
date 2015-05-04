@@ -11,19 +11,12 @@ int accel_raw = 0;
 int accel_sample;
 int accel_n = 100;
 int accel_range = 1250;
-int accel_low;
-int accel_high;
 
 // variables for accelerometer
-//int accel_low = 3000;
-//int accel_high = 7000;
+int accel_low = 3000;
+int accel_high = 7000;
 int accel_avg = 0;
 int accel_offset = 0;
-
-
-void accel_setup(){
-  pinMode(accel, INPUT);
-}
 
 void sample_accel(){
   long accel_total = 0;
@@ -47,7 +40,7 @@ void sample_accel(){
 void read_accel(){
   // read the y axis of the accelerometer
   accel_raw = pulseIn(accel, HIGH);
-  accel_angle = map(accel_raw, accel_low, accel_high, -55, 50);
+  accel_angle = map(accel_raw, accel_low, accel_high, -50, 55);
 }
 
 void set_accel_offset(){
